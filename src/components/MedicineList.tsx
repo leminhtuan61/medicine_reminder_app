@@ -21,6 +21,7 @@ export interface Medicine {
   startDate?: string;
   duration?: string;
   frequency?: string;
+  note?: string;
 }
 
 const MedicineList = () => {
@@ -117,15 +118,8 @@ const MedicineList = () => {
     // This effect will trigger a re-render when selectedDate changes
   }, [selectedDate]);
 
-  // Filter medicines by type
-  const filteredMedicines = medicines.filter(medicine => 
-    activeCategory === 'medicine' ? 
-      (medicine.type === 'medicine' || medicine.type === 'tablet' || medicine.type === 'other') : 
-      medicine.type === 'injection'
-  );
-
   // Check if medicine should be shown on selected date based on startDate, duration and frequency
-  const shouldShowMedicine = (medicine: Medicine): boolean => {
+  const shouldShowMedicine = (medicine: Medicine, selectedDate: string): boolean => {
     // Nếu thuốc không có ngày bắt đầu
     if (!medicine.startDate) {
       return true;
@@ -218,7 +212,7 @@ const MedicineList = () => {
           return true;
           
         case 'Every 2 days':
-        case 'Cách 2 ngày':
+        case 'Cách 1 ngày':
           // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
           return diffDays % 2 === 0;
           
@@ -250,6 +244,15 @@ const MedicineList = () => {
 
     return true;
   };
+
+  // Filter medicines by type
+  const filteredMedicines = medicines.filter(med => {
+    // Filter by medicine type based on active category tab
+    if (activeCategory === 'medicine') {
+      return med.type === 'medicine' || med.type === 'tablet' || med.type === 'other';
+    }
+    return false;
+  }).filter(med => shouldShowMedicine(med, selectedDate));
 
   // Toggle medicine taken status
   const toggleMedicineTaken = (medicineId: number, scheduleIndex: number) => {
@@ -327,7 +330,7 @@ const MedicineList = () => {
   // Lấy danh sách thuốc cần hiển thị cho ngày được chọn
   const displayMedicines = filteredMedicines
     // Chỉ lấy thuốc nên hiển thị trong ngày được chọn
-    .filter(medicine => shouldShowMedicine(medicine));
+    .filter(medicine => shouldShowMedicine(medicine, selectedDate));
 
   // Nhóm thuốc theo thời gian uống
   interface MedicineWithSchedule {
@@ -388,6 +391,25 @@ const MedicineList = () => {
     return timeA.localeCompare(timeB);
   });
 
+  // Hàm dịch tần suất sang tiếng Việt
+  const translateFrequency = (frequency: string): string => {
+    if (!frequency) return '';
+    
+    if (language === 'vi') {
+      switch (frequency) {
+        case 'Daily': return 'Hàng ngày';
+        case 'Every 2 days': return 'Cách 1 ngày';
+        case 'Every 3 days': return 'Cách 2 ngày';
+        case 'Every 4 days': return 'Cách 3 ngày';
+        case 'Weekly': return 'Hàng tuần';
+        case 'Monthly': return 'Hàng tháng';
+        default: return frequency;
+      }
+    }
+    
+    return frequency;
+  };
+
   return (
     <div className="px-6">
       {/* Confirmation Modal */}
@@ -427,8 +449,11 @@ const MedicineList = () => {
                     <div className="flex-1">
                       <h3 className="font-medium">{item.medicine.name}</h3>
                       <div className="flex items-center flex-wrap text-sm text-gray-500 mt-1">
+                        {item.medicine.note && (
+                          <span className="mr-2 text-gray-600 italic bg-gray-100 px-2 py-0.5 rounded-md text-xs">{item.medicine.note}</span>
+                        )}
                         {item.medicine.frequency && (
-                          <span className="mr-2">{item.medicine.frequency}</span>
+                          <span className="mr-2">{translateFrequency(item.medicine.frequency)}</span>
                         )}
                       </div>
                     </div>
@@ -460,20 +485,12 @@ const MedicineList = () => {
       ) : (
         <div className="text-center py-10">
           <div className="text-gray-400 mb-4">
-            {activeCategory === 'medicine' ? (
-              <TabletBottle size={64} className="mx-auto" />
-            ) : (
-              <div className="w-16 h-16 mx-auto relative">
-                <div className="w-2 h-10 bg-gray-300 absolute left-7 top-0"></div>
-                <div className="w-8 h-4 bg-gray-300 absolute left-4 top-10 rounded-b-lg"></div>
-                <div className="w-1 h-2 bg-gray-400 absolute left-7.5 bottom-0"></div>
-              </div>
-            )}
+            <TabletBottle size={64} className="mx-auto" />
           </div>
           <h3 className="text-lg font-medium text-gray-500">
             {language === 'vi' 
-              ? `Không có ${activeCategory === 'medicine' ? 'thuốc' : 'lịch tiêm'} nào cho ngày này` 
-              : `No ${activeCategory === 'medicine' ? 'medications' : 'injections'} for this date`}
+              ? 'Không có thuốc nào cho ngày này' 
+              : 'No medications for this date'}
           </h3>
           <p className="text-gray-400 mt-2">
             {language === 'vi'

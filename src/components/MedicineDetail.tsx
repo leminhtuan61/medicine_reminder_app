@@ -212,7 +212,7 @@ const MedicineDetail = () => {
           return true;
           
         case 'Every 2 days':
-        case 'Cách 2 ngày':
+        case 'Cách 1 ngày':
           // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
           return diffDays % 2 === 0;
           
@@ -338,7 +338,7 @@ const MedicineDetail = () => {
           return '';
           
         case 'Every 2 days':
-        case 'Cách 2 ngày':
+        case 'Cách 1 ngày':
           if (diffDays % 2 !== 0) {
             return language === 'vi'
               ? 'Không cần uống thuốc này hôm nay. Lần uống kế tiếp là ngày mai.'
@@ -459,6 +459,46 @@ const MedicineDetail = () => {
     return nextDoseDate;
   };
 
+  // Hàm dịch tần suất sang tiếng Việt
+  const translateFrequency = (frequency: string): string => {
+    if (!frequency) return '';
+    
+    if (language === 'vi') {
+      switch (frequency) {
+        case 'Daily': return 'Hàng ngày';
+        case 'Every 2 days': return 'Cách 1 ngày';
+        case 'Every 3 days': return 'Cách 2 ngày';
+        case 'Every 4 days': return 'Cách 3 ngày';
+        case 'Weekly': return 'Hàng tuần';
+        case 'Monthly': return 'Hàng tháng';
+        default: return frequency;
+      }
+    }
+    
+    return frequency;
+  };
+
+  // Hàm dịch quãng thời gian uống thuốc
+  const translateDuration = (duration: string): string => {
+    if (!duration) return '';
+    
+    if (language === 'vi') {
+      switch (duration) {
+        case 'One Day': return '1 Ngày';
+        case '1 Week': return '1 Tuần';
+        case '2 Weeks': return '2 Tuần';
+        case '1 Month': return '1 Tháng';
+        case '3 Months': return '3 Tháng';
+        case '6 Months': return '6 Tháng';
+        case '1 Year': return '1 Năm';
+        case 'Ongoing': return 'Liên tục';
+        default: return duration;
+      }
+    }
+    
+    return duration;
+  };
+
   return (
     <div className="p-6 pb-28">
       <div className="flex items-center justify-between mb-6">
@@ -542,7 +582,7 @@ const MedicineDetail = () => {
                         const endDate = new Date(startDate);
                         endDate.setDate(startDate.getDate() + durationDays - 1); // Trừ 1 vì đã tính cả ngày bắt đầu
                         
-                        return `${startDate.toLocaleDateString()} → ${endDate.toLocaleDateString()} (${medicine.duration})`;
+                        return `${startDate.toLocaleDateString()} → ${endDate.toLocaleDateString()} (${translateDuration(medicine.duration)})`;
                       }
                       
                       return `${startDate.toLocaleDateString()} → ${language === 'vi' ? 'Không giới hạn' : 'Unlimited'}`;
@@ -576,7 +616,7 @@ const MedicineDetail = () => {
                           {language === 'vi' ? 'Thời gian' : 'Duration'}
                         </p>
                         <p className="font-medium">
-                          {medicine.duration || (language === 'vi' ? 'Không xác định' : 'Not specified')}
+                          {medicine.duration ? translateDuration(medicine.duration) : (language === 'vi' ? 'Không xác định' : 'Not specified')}
                           {medicine.duration && medicine.startDate && (
                             <>
                               {" "}
@@ -625,7 +665,7 @@ const MedicineDetail = () => {
                           {language === 'vi' ? 'Tần suất' : 'Frequency'}
                         </p>
                         <p className="font-medium">
-                          {medicine.frequency || (language === 'vi' ? 'Không xác định' : 'Not specified')}
+                          {medicine.frequency ? translateFrequency(medicine.frequency) : (language === 'vi' ? 'Không xác định' : 'Not specified')}
                         </p>
                       </div>
                     </div>
@@ -674,6 +714,18 @@ const MedicineDetail = () => {
                 </p>
               </div>
             </div>
+            
+            {/* Notes Section */}
+            {medicine.note && (
+              <div className="mt-4">
+                <p className="text-gray-500 text-sm mb-1">
+                  {language === 'vi' ? 'Ghi chú' : 'Notes'}
+                </p>
+                <p className="font-medium bg-white p-3 rounded-lg border border-gray-200">
+                  {medicine.note}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

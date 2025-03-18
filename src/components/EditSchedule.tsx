@@ -28,6 +28,13 @@ const EditSchedule = () => {
     }
   }, [id]);
 
+  // Đặt lại tần suất khi thời gian điều trị là 1 ngày
+  useEffect(() => {
+    if (duration === '1 Ngày' || duration === 'One Day') {
+      setFrequency('');
+    }
+  }, [duration]);
+
   const handleBack = () => {
     navigate(-1);
   };
@@ -40,7 +47,12 @@ const EditSchedule = () => {
       const parsedMedicines: Medicine[] = JSON.parse(storedMedicines);
       const updatedMedicines = parsedMedicines.map(med => {
         if (med.id === parseInt(id)) {
-          return { ...med, startDate, duration, frequency };
+          // Nếu thời gian điều trị là 1 ngày, không lưu tần suất
+          if (duration === '1 Ngày' || duration === 'One Day') {
+            return { ...med, startDate, duration, frequency: '' };
+          } else {
+            return { ...med, startDate, duration, frequency };
+          }
         }
         return med;
       });
@@ -102,8 +114,6 @@ const EditSchedule = () => {
                     <option value="1 Tháng">1 Tháng</option>
                     <option value="3 Tháng">3 Tháng</option>
                     <option value="6 Tháng">6 Tháng</option>
-                    <option value="1 Năm">1 Năm</option>
-                    <option value="Liên tục">Liên tục</option>
                   </>
                 ) : (
                   <>
@@ -113,44 +123,42 @@ const EditSchedule = () => {
                     <option value="1 Month">1 Month</option>
                     <option value="3 Months">3 Months</option>
                     <option value="6 Months">6 Months</option>
-                    <option value="1 Year">1 Year</option>
-                    <option value="Ongoing">Ongoing</option>
                   </>
                 )}
               </select>
             </div>
             
-            <div className="mb-4">
-              <label htmlFor="frequency" className="block text-gray-700 mb-2">
-                {language === 'vi' ? 'Tần suất' : 'Frequency'}
-              </label>
-              <select
-                id="frequency"
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value)}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {language === 'vi' ? (
-                  <>
-                    <option value="Hằng ngày">Hằng ngày</option>
-                    <option value="Cách 2 ngày">Cách 2 ngày</option>
-                    <option value="Cách 3 ngày">Cách 3 ngày</option>
-                    <option value="Hàng tuần">Hàng tuần</option>
-                    <option value="Hai tuần một lần">Hai tuần một lần</option>
-                    <option value="Hàng tháng">Hàng tháng</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="Daily">Daily</option>
-                    <option value="Every 2 days">Every 2 days</option>
-                    <option value="Every 3 days">Every 3 days</option>
-                    <option value="Weekly">Weekly</option>
-                    <option value="Biweekly">Biweekly</option>
-                    <option value="Monthly">Monthly</option>
-                  </>
-                )}
-              </select>
-            </div>
+            {duration !== '1 Ngày' && duration !== 'One Day' && (
+              <div className="mb-4">
+                <label htmlFor="frequency" className="block text-gray-700 mb-2">
+                  {language === 'vi' ? 'Tần suất' : 'Frequency'}
+                </label>
+                <select
+                  id="frequency"
+                  value={frequency}
+                  onChange={(e) => setFrequency(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {language === 'vi' ? (
+                    <>
+                      <option value="Hằng ngày">Hằng ngày</option>
+                      <option value="Cách 1 ngày">Cách 1 ngày</option>
+                      <option value="Cách 2 ngày">Cách 2 ngày</option>
+                      <option value="Cách 3 ngày">Cách 3 ngày</option>
+                      <option value="Hàng tuần">Hàng tuần</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="Daily">Daily</option>
+                      <option value="Every 2 days">Every 2 days</option>
+                      <option value="Every 3 days">Every 3 days</option>
+                      <option value="Every 4 days">Every 4 days</option>
+                      <option value="Weekly">Weekly</option>
+                    </>
+                  )}
+                </select>
+              </div>
+            )}
           </div>
           
           {/* Save Button */}

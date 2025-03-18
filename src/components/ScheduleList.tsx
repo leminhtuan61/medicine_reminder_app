@@ -69,6 +69,66 @@ const ScheduleList = () => {
     }
   };
 
+  // Hàm dịch tần suất sang tiếng Việt
+  const translateFrequency = (frequency: string): string => {
+    if (!frequency) return '';
+    
+    if (language === 'vi') {
+      switch (frequency) {
+        case 'Daily': return 'Hàng ngày';
+        case 'Every 2 days': return 'Cách 1 ngày';
+        case 'Every 3 days': return 'Cách 2 ngày';
+        case 'Every 4 days': return 'Cách 3 ngày';
+        case 'Weekly': return 'Hàng tuần';
+        case 'Monthly': return 'Hàng tháng';
+        default: return frequency;
+      }
+    }
+    
+    return frequency;
+  };
+
+  // Hàm dịch thời gian lịch trình
+  const translateScheduleTime = (time: string): string => {
+    if (!time) return '';
+    
+    if (language === 'vi') {
+      switch (time) {
+        case 'Before Breakfast': return 'Trước Bữa Sáng';
+        case 'After Breakfast': return 'Sau Bữa Sáng';
+        case 'Before Lunch': return 'Trước Bữa Trưa';
+        case 'After Lunch': return 'Sau Bữa Trưa';
+        case 'Before Dinner': return 'Trước Bữa Tối';
+        case 'After Dinner': return 'Sau Bữa Tối';
+        case 'Before Bed': return 'Trước Khi Ngủ';
+        default: return time;
+      }
+    }
+    
+    return time;
+  };
+
+  // Hàm dịch quãng thời gian uống thuốc
+  const translateDuration = (duration: string): string => {
+    if (!duration) return '';
+    
+    if (language === 'vi') {
+      switch (duration) {
+        case 'One Day': return '1 Ngày';
+        case '1 Week': return '1 Tuần';
+        case '2 Weeks': return '2 Tuần';
+        case '1 Month': return '1 Tháng';
+        case '3 Months': return '3 Tháng';
+        case '6 Months': return '6 Tháng';
+        case '1 Year': return '1 Năm';
+        case 'Ongoing': return 'Liên tục';
+        default: return duration;
+      }
+    }
+    
+    return duration;
+  };
+
   return (
     <div className="p-6 pb-28 bg-gray-50 min-h-screen">
       <div className="flex items-center justify-between mb-6">
@@ -131,7 +191,7 @@ const ScheduleList = () => {
                             key={index} 
                             className={`${schedule.color} px-2 py-0.5 rounded-full text-xs`}
                           >
-                            {schedule.time}
+                            {translateScheduleTime(schedule.time)}
                           </span>
                         ))}
                       </div>
@@ -145,7 +205,7 @@ const ScheduleList = () => {
                 <div className="flex items-center">
                   <Calendar size={16} className="mr-2 flex-shrink-0" />
                   <span>
-                    {medicine.duration || (language === 'vi' ? 'Không xác định' : 'Not specified')}
+                    {medicine.duration ? translateDuration(medicine.duration) : (language === 'vi' ? 'Không xác định' : 'Not specified')}
                   </span>
                 </div>
                 
@@ -154,7 +214,7 @@ const ScheduleList = () => {
                   <div className="flex items-center">
                     <Repeat size={16} className="mr-2 flex-shrink-0" />
                     <span>
-                      {medicine.frequency || (language === 'vi' ? 'Không xác định' : 'Not specified')}
+                      {medicine.frequency ? translateFrequency(medicine.frequency) : (language === 'vi' ? 'Không xác định' : 'Not specified')}
                     </span>
                   </div>
                 )}

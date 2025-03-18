@@ -101,7 +101,7 @@ const shouldShowMedicine = (medicine: Medicine, dateStr: string): boolean => {
         return true;
         
       case 'Every 2 days':
-      case 'Cách 2 ngày':
+      case 'Cách 1 ngày':
         // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
         return diffDays % 2 === 0;
         

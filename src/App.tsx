@@ -123,7 +123,10 @@ function MainScreen() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">
-              {language === 'vi' ? 'Nhắc Nhở' : 'Reminder'}
+              {language === 'vi' ? 'Nhắc Nhở' : 'Medicine'}
+            </h1>
+            <h1 className="text-3xl font-bold">
+              {language === 'vi' ? 'Uống Thuốc' : 'Reminder'}
             </h1>
           </div>
           <div className="relative" ref={languageMenuRef}>
@@ -180,12 +183,6 @@ function MainScreen() {
             onClick={() => handleTabChange('medicine')}
           >
             {language === 'vi' ? 'Thuốc' : 'Medications'}
-          </button>
-          <button 
-            className={`py-2 px-4 ${activeTab === 'injection' ? 'border-b-2 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}
-            onClick={() => handleTabChange('injection')}
-          >
-            {language === 'vi' ? 'Lịch tiêm' : 'Injection Schedule'}
           </button>
           <button 
             className={`py-2 px-4 ${activeTab === 'water' ? 'border-b-2 border-indigo-500 text-indigo-500' : 'text-gray-500'}`}

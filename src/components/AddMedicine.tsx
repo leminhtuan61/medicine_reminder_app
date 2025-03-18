@@ -1,20 +1,38 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Bell } from 'lucide-react';
-import { Pill, Capsule, TabletBottle, Tablets, Syringe } from './MedicineIcons';
+import { ChevronLeft } from 'lucide-react';
 import { LanguageContext } from '../App';
 
 const AddMedicine = () => {
   const navigate = useNavigate();
   const { language } = useContext(LanguageContext);
   const [name, setName] = useState('');
-  const [iconType, setIconType] = useState('pill');
-  const [iconColor, setIconColor] = useState('');
-  const [type, setType] = useState<'medicine' | 'injection'>('medicine');
   const [schedules, setSchedules] = useState<string[]>([]);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [duration, setDuration] = useState('');
   const [frequency, setFrequency] = useState('');
+  const [note, setNote] = useState('');
+
+  // Cập nhật lại frequency khi duration thay đổi
+  useEffect(() => {
+    // Nếu chọn 1 tuần nhưng frequency không phù hợp
+    if (duration === '1 Week') {
+      // Kiểm tra xem frequency có phù hợp với 1 tuần không
+      const validFrequencies = ['Daily', 'Every 2 days', 'Every 3 days', 'Every 4 days'];
+      if (frequency && !validFrequencies.includes(frequency)) {
+        setFrequency(''); // Đặt lại frequency
+      }
+    }
+    
+    // Nếu chọn 2 tuần nhưng frequency không phù hợp
+    if (duration === '2 Weeks') {
+      // Kiểm tra xem frequency có phù hợp với 2 tuần không
+      const validFrequencies = ['Daily', 'Every 2 days', 'Every 3 days', 'Every 4 days', 'Weekly'];
+      if (frequency && !validFrequencies.includes(frequency)) {
+        setFrequency(''); // Đặt lại frequency nếu không phù hợp
+      }
+    }
+  }, [duration, frequency]);
 
   const handleBack = () => {
     navigate('/');
@@ -40,8 +58,8 @@ const AddMedicine = () => {
     
     if (schedules.length === 0) {
       alert(language === 'vi' 
-        ? (type === 'medicine' ? 'Vui lòng chọn thời gian uống thuốc' : 'Vui lòng chọn ngày tiêm') 
-        : (type === 'medicine' ? 'Please select medicine schedule' : 'Please select injection days'));
+        ? 'Vui lòng chọn thời gian uống thuốc'
+        : 'Please select medicine schedule');
       return;
     }
     
@@ -64,14 +82,15 @@ const AddMedicine = () => {
     const newMedicine = {
       id: newId,
       name,
-      iconType,
-      iconColor: iconColor || undefined,
-      schedules: schedules.map(time => ({ time, color: type === 'medicine' ? 'bg-indigo-100 text-indigo-800' : 'bg-purple-100 text-purple-800' })),
+      iconType: 'pill',
+      iconColor: '#6366F1',
+      schedules: schedules.map(time => ({ time, color: 'bg-indigo-100 text-indigo-800' })),
       takenRecords: {},
-      type,
+      type: 'medicine',
       startDate,
       duration,
-      frequency
+      frequency,
+      note
     };
     
     medicines.push(newMedicine);
@@ -82,45 +101,16 @@ const AddMedicine = () => {
     navigate('/');
   };
 
-  const typeOptions = [
-    { 
-      id: 'medicine', 
-      label: language === 'vi' ? 'Thuốc' : 'Medicine',
-      icon: <div className="w-12 h-12 flex items-center justify-center">
-        <Pill size={40} color="#FF5757" />
-      </div>
-    },
-    { 
-      id: 'injection', 
-      label: language === 'vi' ? 'Tiêm' : 'Injection',
-      icon: <div className="w-12 h-12 flex items-center justify-center">
-        <Syringe size={40} color="#4F46E5" />
-      </div>
-    }
-  ];
-
   const getScheduleOptions = () => {
-    if (type === 'medicine') {
-      return [
-        language === 'vi' ? 'Trước Bữa Sáng' : 'Before Breakfast',
-        language === 'vi' ? 'Sau Bữa Sáng' : 'After Breakfast',
-        language === 'vi' ? 'Trước Bữa Trưa' : 'Before Lunch',
-        language === 'vi' ? 'Sau Bữa Trưa' : 'After Lunch',
-        language === 'vi' ? 'Trước Bữa Tối' : 'Before Dinner',
-        language === 'vi' ? 'Sau Bữa Tối' : 'After Dinner',
-        language === 'vi' ? 'Trước Khi Ngủ' : 'Before Bed'
-      ];
-    } else {
-      return [
-        language === 'vi' ? 'Thứ 2' : 'Monday',
-        language === 'vi' ? 'Thứ 3' : 'Tuesday',
-        language === 'vi' ? 'Thứ 4' : 'Wednesday',
-        language === 'vi' ? 'Thứ 5' : 'Thursday',
-        language === 'vi' ? 'Thứ 6' : 'Friday',
-        language === 'vi' ? 'Thứ 7' : 'Saturday',
-        language === 'vi' ? 'Chủ Nhật' : 'Sunday'
-      ];
-    }
+    return [
+      language === 'vi' ? 'Trước Bữa Sáng' : 'Before Breakfast',
+      language === 'vi' ? 'Sau Bữa Sáng' : 'After Breakfast',
+      language === 'vi' ? 'Trước Bữa Trưa' : 'Before Lunch',
+      language === 'vi' ? 'Sau Bữa Trưa' : 'After Lunch',
+      language === 'vi' ? 'Trước Bữa Tối' : 'Before Dinner',
+      language === 'vi' ? 'Sau Bữa Tối' : 'After Dinner',
+      language === 'vi' ? 'Trước Khi Ngủ' : 'Before Bed'
+    ];
   };
 
   const durationOptions = [
@@ -130,118 +120,89 @@ const AddMedicine = () => {
     { value: '2 Weeks', label: language === 'vi' ? '2 Tuần' : '2 Weeks' },
     { value: '1 Month', label: language === 'vi' ? '1 Tháng' : '1 Month' },
     { value: '3 Months', label: language === 'vi' ? '3 Tháng' : '3 Months' },
-    { value: '6 Months', label: language === 'vi' ? '6 Tháng' : '6 Months' },
-    { value: '1 Year', label: language === 'vi' ? '1 Năm' : '1 Year' },
-    { value: 'Ongoing', label: language === 'vi' ? 'Liên tục' : 'Ongoing' }
+    { value: '6 Months', label: language === 'vi' ? '6 Tháng' : '6 Months' }
   ];
 
-  const frequencyOptions = type === 'medicine' ? [
+  const frequencyOptions = [
     { value: '', label: language === 'vi' ? 'Chọn tần suất' : 'Select frequency' },
     { value: 'Daily', label: language === 'vi' ? 'Hàng ngày' : 'Daily' },
-    { value: 'Every Other Day', label: language === 'vi' ? 'Cách ngày' : 'Every Other Day' },
-    { value: 'Weekly', label: language === 'vi' ? 'Hàng tuần' : 'Weekly' },
-    { value: 'Monthly', label: language === 'vi' ? 'Hàng tháng' : 'Monthly' }
-  ] : [
-    { value: '', label: language === 'vi' ? 'Chọn tần suất' : 'Select frequency' },
-    { value: 'Weekly', label: language === 'vi' ? 'Hàng tuần' : 'Weekly' },
-    { value: 'Bi-weekly', label: language === 'vi' ? 'Hai tuần một lần' : 'Bi-weekly' },
-    { value: 'Monthly', label: language === 'vi' ? 'Hàng tháng' : 'Monthly' },
-    { value: 'Quarterly', label: language === 'vi' ? 'Hàng quý' : 'Quarterly' },
-    { value: 'Yearly', label: language === 'vi' ? 'Hàng năm' : 'Yearly' }
+    { value: 'Every 2 days', label: language === 'vi' ? 'Cách 1 ngày' : 'Every 2 days' },
+    { value: 'Every 3 days', label: language === 'vi' ? 'Cách 2 ngày' : 'Every 3 days' },
+    { value: 'Every 4 days', label: language === 'vi' ? 'Cách 3 ngày' : 'Every 4 days' },
+    { value: 'Weekly', label: language === 'vi' ? 'Hàng tuần' : 'Weekly' }
   ];
 
+  // Lọc danh sách tần suất dựa trên thời gian điều trị đã chọn
+  const getFilteredFrequencyOptions = () => {
+    // Nếu chọn 1 tuần, hiển thị hàng ngày, cách 1 ngày, cách 2 ngày, cách 3 ngày
+    if (duration === '1 Week') {
+      return frequencyOptions.filter(option => 
+        option.value === '' || 
+        option.value === 'Daily' || 
+        option.value === 'Every 2 days' ||
+        option.value === 'Every 3 days' ||
+        option.value === 'Every 4 days'
+      );
+    }
+    
+    // Nếu chọn 2 tuần
+    if (duration === '2 Weeks') {
+      return frequencyOptions.filter(option => 
+        option.value === '' || 
+        option.value === 'Daily' || 
+        option.value === 'Every 2 days' ||
+        option.value === 'Every 3 days' ||
+        option.value === 'Every 4 days' ||
+        option.value === 'Weekly'
+      );
+    }
+    
+    // Với các lựa chọn khác, hiển thị tất cả
+    return frequencyOptions;
+  };
+
   return (
-    <div className="p-6 pb-28 bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-between mb-6">
-        <button onClick={handleBack} className="p-2">
+    <div className="bg-gray-50 min-h-screen flex flex-col">
+      {/* Header */}
+      <div className="flex items-center p-4 border-b bg-white">
+        <button onClick={handleBack} className="mr-4">
           <ChevronLeft size={24} />
         </button>
-        <h1 className="text-xl font-bold">
-          {language === 'vi' ? 'Nhắc nhở mới' : 'New Reminder'}
+        <h1 className="text-xl font-semibold">
+          {language === 'vi' ? 'Thêm Thuốc Mới' : 'Add New Medicine'}
         </h1>
-        <button className="p-2 bg-indigo-400 rounded-lg">
-          <Bell size={20} className="text-white" />
-        </button>
       </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="name" className="block text-gray-600 text-lg mb-2">
-            {type === 'medicine' 
-              ? (language === 'vi' ? 'Tên thuốc' : 'Medicine Name')
-              : (language === 'vi' ? 'Tên mũi tiêm' : 'Injection Name')}
-          </label>
-          <input
-            type="text"
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder={type === 'medicine'
-              ? (language === 'vi' ? 'Nhập tên thuốc' : 'Enter medicine name')
-              : (language === 'vi' ? 'Nhập tên mũi tiêm' : 'Enter injection name')}
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block text-gray-600 text-lg mb-2">
-            {language === 'vi' ? 'Loại' : 'Type'}
-          </label>
-          <div className="grid grid-cols-2 gap-4">
-            {typeOptions.map(option => (
-              <button
-                key={option.id}
-                type="button"
-                className={`p-4 rounded-xl flex flex-col items-center justify-center ${
-                  type === option.id ? 'bg-indigo-400 text-white' : 'bg-white shadow'
-                }`}
-                onClick={() => setType(option.id as any)}
-              >
-                {option.icon}
-                <span className="mt-2">{option.label}</span>
-              </button>
-            ))}
+      {/* Form */}
+      <div className="flex-grow p-6 overflow-auto">
+        <form onSubmit={handleSubmit} className="space-y-6 pb-20">
+          <div>
+            <label htmlFor="name" className="block text-gray-600 text-lg mb-2">
+              {language === 'vi' ? 'Tên thuốc' : 'Medicine Name'}
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder={language === 'vi' ? 'Nhập tên thuốc' : 'Enter medicine name'}
+              required
+            />
           </div>
-        </div>
-        
-        <div>
-          <label className="block text-gray-600 text-lg mb-2">
-            {type === 'medicine'
-              ? (language === 'vi' ? 'Thời gian & Lịch' : 'Time & Schedule')
-              : (language === 'vi' ? 'Ngày tiêm' : 'Injection Days')}
-          </label>
           
-          {type === 'medicine' ? (
+          <div>
+            <label className="block text-gray-600 text-lg mb-2">
+              {language === 'vi' ? 'Thời gian & Lịch' : 'Time & Schedule'}
+            </label>
+            
             <div className="grid grid-cols-2 gap-2 mb-4">
-              {getScheduleOptions().map(schedule => (
-                <div 
-                  key={schedule} 
-                  className={`px-4 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
-                    schedules.includes(schedule) 
-                      ? 'bg-indigo-200 text-indigo-800 font-medium' 
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                  onClick={() => {
-                    if (schedules.includes(schedule)) {
-                      handleRemoveSchedule(schedule);
-                    } else {
-                      handleAddSchedule(schedule);
-                    }
-                  }}
-                >
-                  <span>{schedule}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-2 mb-4">
               {getScheduleOptions().map(schedule => (
                 <div 
                   key={schedule} 
                   className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
                     schedules.includes(schedule) 
-                      ? 'bg-purple-200 text-purple-800 font-medium' 
+                      ? 'bg-indigo-200 text-indigo-800 font-medium' 
                       : 'bg-gray-100 text-gray-500'
                   }`}
                   onClick={() => {
@@ -256,74 +217,86 @@ const AddMedicine = () => {
                 </div>
               ))}
             </div>
-          )}
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <label className="block text-gray-600 text-lg mb-2">
-              {language === 'vi' ? 'Thời gian' : 'Duration'}
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {durationOptions.filter(option => option.value !== '').map(option => (
-                <div
-                  key={option.value}
-                  className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors text-center ${
-                    duration === option.value
-                      ? 'bg-pink-200 text-pink-800 font-medium'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}
-                  onClick={() => setDuration(option.value)}
-                >
-                  <span className="text-sm">{option.label}</span>
-                </div>
-              ))}
-            </div>
           </div>
           
-          {duration !== '1 Ngày' && duration !== '' && (
+          <div className="space-y-6">
             <div>
               <label className="block text-gray-600 text-lg mb-2">
-                {language === 'vi' ? 'Tần suất' : 'Frequency'}
+                {language === 'vi' ? 'Thời gian' : 'Duration'}
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {frequencyOptions.filter(option => option.value !== '').map(option => (
+              <div className="grid grid-cols-3 gap-2">
+                {durationOptions.filter(option => option.value !== '').map(option => (
                   <div
                     key={option.value}
-                    className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
-                      frequency === option.value
-                        ? 'bg-indigo-200 text-indigo-800 font-medium'
+                    className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors text-center ${
+                      duration === option.value
+                        ? 'bg-pink-200 text-pink-800 font-medium'
                         : 'bg-gray-100 text-gray-500'
                     }`}
-                    onClick={() => setFrequency(option.value)}
+                    onClick={() => setDuration(option.value)}
                   >
-                    <span>{option.label}</span>
+                    <span className="text-sm">{option.label}</span>
                   </div>
                 ))}
               </div>
             </div>
-          )}
+            
+            {duration !== '1 Ngày' && duration !== '' && (
+              <div>
+                <label className="block text-gray-600 text-lg mb-2">
+                  {language === 'vi' ? 'Tần suất' : 'Frequency'}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {getFilteredFrequencyOptions().filter(option => option.value !== '').map(option => (
+                    <div
+                      key={option.value}
+                      className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+                        frequency === option.value
+                          ? 'bg-indigo-200 text-indigo-800 font-medium'
+                          : 'bg-gray-100 text-gray-500'
+                      }`}
+                      onClick={() => setFrequency(option.value)}
+                    >
+                      <span>{option.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          <div>
-            <label className="block text-gray-600 text-lg mb-2">
-              {language === 'vi' ? 'Ngày bắt đầu' : 'Start Date'}
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div>
+              <label className="block text-gray-600 text-lg mb-2">
+                {language === 'vi' ? 'Ngày bắt đầu' : 'Start Date'}
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-600 text-lg mb-2">
+                {language === 'vi' ? 'Ghi chú' : 'Notes'}
+              </label>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[100px]"
+                placeholder={language === 'vi' ? 'Thêm ghi chú về thuốc này...' : 'Add notes about this medicine...'}
+              />
+            </div>
           </div>
-        </div>
-        
-        <button
-          type="submit"
-          className="w-full py-4 rounded-xl bg-pink-400 text-white font-medium text-lg mt-8"
-        >
-          {language === 'vi' ? 'Thêm nhắc nhở' : 'Add Reminder'}
-        </button>
-      </form>
+          
+          <button
+            type="submit"
+            className="w-full py-4 rounded-xl bg-pink-400 text-white font-medium text-lg mt-8"
+          >
+            {language === 'vi' ? 'Thêm nhắc nhở' : 'Add Reminder'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
