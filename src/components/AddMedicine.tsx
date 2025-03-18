@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Bell } from 'lucide-react';
-import { Pill, Capsule, TabletBottle, Tablets } from './MedicineIcons';
+import { Pill, Capsule, TabletBottle, Tablets, Syringe } from './MedicineIcons';
 import { LanguageContext } from '../App';
 
 const AddMedicine = () => {
@@ -12,9 +12,9 @@ const AddMedicine = () => {
   const [iconColor, setIconColor] = useState('');
   const [type, setType] = useState<'medicine' | 'injection'>('medicine');
   const [schedules, setSchedules] = useState<string[]>([]);
+  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [duration, setDuration] = useState('');
   const [frequency, setFrequency] = useState('');
-  const [waterAmount, setWaterAmount] = useState('');
 
   const handleBack = () => {
     navigate('/');
@@ -35,6 +35,13 @@ const AddMedicine = () => {
     
     if (!name.trim()) {
       alert(language === 'vi' ? 'Vui lòng nhập tên thuốc' : 'Please enter a medicine name');
+      return;
+    }
+    
+    if (schedules.length === 0) {
+      alert(language === 'vi' 
+        ? (type === 'medicine' ? 'Vui lòng chọn thời gian uống thuốc' : 'Vui lòng chọn ngày tiêm') 
+        : (type === 'medicine' ? 'Please select medicine schedule' : 'Please select injection days'));
       return;
     }
     
@@ -59,12 +66,12 @@ const AddMedicine = () => {
       name,
       iconType,
       iconColor: iconColor || undefined,
-      schedules: schedules.map(time => ({ time, color: 'bg-indigo-100 text-indigo-800' })),
+      schedules: schedules.map(time => ({ time, color: type === 'medicine' ? 'bg-indigo-100 text-indigo-800' : 'bg-purple-100 text-purple-800' })),
       takenRecords: {},
       type,
+      startDate,
       duration,
-      frequency,
-      waterAmount: waterAmount || undefined
+      frequency
     };
     
     medicines.push(newMedicine);
@@ -80,21 +87,14 @@ const AddMedicine = () => {
       id: 'medicine', 
       label: language === 'vi' ? 'Thuốc' : 'Medicine',
       icon: <div className="w-12 h-12 flex items-center justify-center">
-        <div className="relative">
-          <TabletBottle size={40} />
-          <div className="absolute -right-1 -bottom-1 bg-red-500 rounded-full w-6 h-6 flex items-center justify-center text-white font-bold text-xs">+</div>
-        </div>
+        <Pill size={40} color="#FF5757" />
       </div>
     },
     { 
       id: 'injection', 
       label: language === 'vi' ? 'Tiêm' : 'Injection',
       icon: <div className="w-12 h-12 flex items-center justify-center">
-        <div className="w-8 h-16 relative">
-          <div className="w-2 h-10 bg-gray-300 absolute left-3 top-0"></div>
-          <div className="w-8 h-4 bg-gray-300 absolute top-10 rounded-b-lg"></div>
-          <div className="w-1 h-2 bg-gray-400 absolute left-3.5 bottom-0"></div>
-        </div>
+        <Syringe size={40} color="#4F46E5" />
       </div>
     }
   ];
@@ -211,82 +211,110 @@ const AddMedicine = () => {
               ? (language === 'vi' ? 'Thời gian & Lịch' : 'Time & Schedule')
               : (language === 'vi' ? 'Ngày tiêm' : 'Injection Days')}
           </label>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {schedules.map(schedule => (
-              <div 
-                key={schedule} 
-                className="px-4 py-2 rounded-full bg-indigo-200 text-indigo-800 flex items-center"
-                onClick={() => handleRemoveSchedule(schedule)}
-              >
-                <span>{schedule}</span>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="w-10 h-10 rounded-full bg-white shadow flex items-center justify-center"
-              onClick={() => {
-                const nextSchedule = getScheduleOptions().find(s => !schedules.includes(s));
-                if (nextSchedule) handleAddSchedule(nextSchedule);
-              }}
-            >
-              <Plus size={20} className="text-pink-500" />
-            </button>
-          </div>
+          
+          {type === 'medicine' ? (
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {getScheduleOptions().map(schedule => (
+                <div 
+                  key={schedule} 
+                  className={`px-4 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+                    schedules.includes(schedule) 
+                      ? 'bg-indigo-200 text-indigo-800 font-medium' 
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                  onClick={() => {
+                    if (schedules.includes(schedule)) {
+                      handleRemoveSchedule(schedule);
+                    } else {
+                      handleAddSchedule(schedule);
+                    }
+                  }}
+                >
+                  <span>{schedule}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {getScheduleOptions().map(schedule => (
+                <div 
+                  key={schedule} 
+                  className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+                    schedules.includes(schedule) 
+                      ? 'bg-purple-200 text-purple-800 font-medium' 
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                  onClick={() => {
+                    if (schedules.includes(schedule)) {
+                      handleRemoveSchedule(schedule);
+                    } else {
+                      handleAddSchedule(schedule);
+                    }
+                  }}
+                >
+                  <span className="text-sm">{schedule}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label className="block text-gray-600 text-lg mb-2">
               {language === 'vi' ? 'Thời gian' : 'Duration'}
             </label>
-            <select
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {durationOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
+            <div className="grid grid-cols-3 gap-2">
+              {durationOptions.filter(option => option.value !== '').map(option => (
+                <div
+                  key={option.value}
+                  className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors text-center ${
+                    duration === option.value
+                      ? 'bg-pink-200 text-pink-800 font-medium'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}
+                  onClick={() => setDuration(option.value)}
+                >
+                  <span className="text-sm">{option.label}</span>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
           
-          {duration !== '1 Ngày' && (
+          {duration !== '1 Ngày' && duration !== '' && (
             <div>
               <label className="block text-gray-600 text-lg mb-2">
                 {language === 'vi' ? 'Tần suất' : 'Frequency'}
               </label>
-              <select
-                value={frequency}
-                onChange={(e) => setFrequency(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {frequencyOptions.map(option => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+              <div className="grid grid-cols-2 gap-2">
+                {frequencyOptions.filter(option => option.value !== '').map(option => (
+                  <div
+                    key={option.value}
+                    className={`px-3 py-3 rounded-lg flex items-center justify-center cursor-pointer transition-colors ${
+                      frequency === option.value
+                        ? 'bg-indigo-200 text-indigo-800 font-medium'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                    onClick={() => setFrequency(option.value)}
+                  >
+                    <span>{option.label}</span>
+                  </div>
                 ))}
-              </select>
+              </div>
             </div>
           )}
 
-          {type === 'medicine' && (
-            <div>
-              <label className="block text-gray-600 text-lg mb-2">
-                {language === 'vi' ? 'Lượng nước uống (ml)' : 'Water Amount (ml)'}
-              </label>
-              <input
-                type="number"
-                value={waterAmount}
-                onChange={(e) => setWaterAmount(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder={language === 'vi' ? 'Nhập lượng nước' : 'Enter water amount'}
-                min="0"
-                step="50"
-              />
-            </div>
-          )}
+          <div>
+            <label className="block text-gray-600 text-lg mb-2">
+              {language === 'vi' ? 'Ngày bắt đầu' : 'Start Date'}
+            </label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full px-4 py-3 rounded-lg bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
         </div>
         
         <button

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, MoreVertical, Clock, User, Ruler, Weight, Edit } from 'lucide-react';
+import { ChevronLeft, MoreVertical, Clock, User, Ruler, Weight, Edit, Calendar, List } from 'lucide-react';
 import { LanguageContext } from '../App';
+import { Medicine } from './MedicineList';
 
 interface UserProfile {
   name: string;
@@ -29,6 +30,7 @@ const Profile = () => {
       dinner: '18:00'
     }
   });
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
 
   useEffect(() => {
     // Load profile from localStorage
@@ -51,14 +53,41 @@ const Profile = () => {
 
     window.addEventListener('profileChanged' as any, handleProfileChange);
     
+    // Load medicines from localStorage
+    const loadMedicines = () => {
+      const storedMedicines = localStorage.getItem('medicines');
+      if (storedMedicines) {
+        try {
+          const parsedMedicines = JSON.parse(storedMedicines);
+          setMedicines(parsedMedicines);
+        } catch (error) {
+          console.error('Error parsing medicines:', error);
+          setMedicines([]);
+        }
+      }
+    };
+
+    loadMedicines();
+
+    // Listen for changes in medicine status
+    window.addEventListener('medicineStatusChanged', loadMedicines);
+    
     return () => {
       window.removeEventListener('profileChanged' as any, handleProfileChange);
+      window.removeEventListener('medicineStatusChanged', loadMedicines);
     };
   }, []);
 
   const handleEditProfile = () => {
     navigate('/edit-profile');
   };
+
+  const navigateToScheduleList = () => {
+    navigate('/schedule-list');
+  };
+
+  // Lấy 3 lịch trình đầu tiên để hiển thị trong màn hình Profile
+  const recentSchedules = medicines.slice(0, 3);
 
   return (
     <div className="pb-28 bg-gray-50 min-h-screen">
@@ -160,110 +189,60 @@ const Profile = () => {
           </div>
         </div>
       </div>
-
-      {/* Ongoing Course Section */}
-      <div className="mt-6 mx-4 mb-6">
-        <h3 className="text-xl font-bold mb-4">
-          {language === 'vi' ? 'Đang điều trị' : 'Ongoing Course'}
-        </h3>
-        
-        {/* Medicine Items */}
-        <div className="space-y-4">
-          {/* Paracetamol */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <div className="w-12 h-12 mr-4">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <circle cx="50" cy="50" r="40" fill="#FFD700" />
-                    <rect x="30" y="30" width="20" height="40" rx="5" fill="#FF6B6B" />
-                    <circle cx="60" cy="50" r="15" fill="#4CAF50" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-lg">Paracetamol XL2</h4>
-                </div>
-              </div>
-              <button>
-                <MoreVertical size={20} />
-              </button>
-            </div>
-            <div className="flex mt-3 gap-2">
-              <span className="bg-blue-200 text-blue-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Sau bữa sáng' : 'After Breakfast'}
-              </span>
-              <span className="bg-pink-200 text-pink-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Sau bữa tối' : 'After Dinner'}
-              </span>
-            </div>
-          </div>
-
-          {/* Abacavir */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <div className="w-12 h-12 mr-4">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <rect x="20" y="20" width="60" height="60" rx="5" fill="#C0C0C0" />
-                    <rect x="30" y="30" width="40" height="40" rx="5" fill="#FF0000" />
-                    <circle cx="50" cy="50" r="15" fill="#4CAF50" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-lg">Abacavir</h4>
-                </div>
-              </div>
-              <button>
-                <MoreVertical size={20} />
-              </button>
-            </div>
-            <div className="flex mt-3 gap-2">
-              <span className="bg-blue-200 text-blue-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Trước bữa trưa' : 'Before Lunch'}
-              </span>
-              <span className="bg-pink-200 text-pink-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Sau bữa tối' : 'After Dinner'}
-              </span>
-            </div>
-          </div>
-
-          {/* Dpp-4 inhibitors */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="flex justify-between">
-              <div className="flex items-center">
-                <div className="w-12 h-12 mr-4">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <g>
-                      {[...Array(10)].map((_, i) => (
-                        <circle 
-                          key={i} 
-                          cx={30 + (i % 5) * 10} 
-                          cy={40 + Math.floor(i / 5) * 20} 
-                          r="5" 
-                          fill="#4A3AFF" 
-                        />
-                      ))}
-                    </g>
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-lg">Dpp-4 inhibitors</h4>
-                </div>
-              </div>
-              <button>
-                <MoreVertical size={20} />
-              </button>
-            </div>
-            <div className="flex mt-3 gap-2">
-              <span className="bg-blue-200 text-blue-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Trước bữa trưa' : 'Before Lunch'}
-              </span>
-              <span className="bg-pink-200 text-pink-800 px-4 py-1 rounded-full text-sm">
-                {language === 'vi' ? 'Sau bữa tối' : 'After Dinner'}
-              </span>
-            </div>
-          </div>
+      
+      {/* Schedules Section */}
+      <div className="mt-6 mx-4 bg-white rounded-xl p-5 shadow-sm">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">
+            {language === 'vi' ? 'Danh sách lịch trình' : 'Schedule List'}
+          </h3>
+          <button 
+            onClick={navigateToScheduleList}
+            className="text-indigo-500 flex items-center text-sm"
+          >
+            {language === 'vi' ? 'Xem tất cả' : 'View all'}
+          </button>
         </div>
+        
+        {recentSchedules.length > 0 ? (
+          <div className="space-y-3">
+            {recentSchedules.map(medicine => (
+              <div key={medicine.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+                    <Calendar size={16} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium">{medicine.name}</h4>
+                    <p className="text-gray-500 text-sm">
+                      {medicine.schedules.length > 0 ? 
+                        medicine.schedules.map(s => s.time).join(', ') : 
+                        (language === 'vi' ? 'Chưa có lịch' : 'No schedule')}
+                    </p>
+                  </div>
+                </div>
+                <Link to={`/edit-schedule/${medicine.id}`} className="text-indigo-500">
+                  <Edit size={16} />
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <Calendar size={32} className="mx-auto text-gray-400 mb-2" />
+            <p className="text-gray-500">
+              {language === 'vi' ? 'Chưa có lịch trình nào' : 'No schedules yet'}
+            </p>
+          </div>
+        )}
+        
+        <button 
+          onClick={navigateToScheduleList}
+          className="mt-4 bg-indigo-500 text-white py-3 w-full rounded-lg flex items-center justify-center"
+        >
+          <List size={18} className="mr-2" />
+          {language === 'vi' ? 'Quản lý lịch trình' : 'Manage Schedules'}
+        </button>
       </div>
     </div>
   );

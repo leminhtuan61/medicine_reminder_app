@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { Home, User, Plus, List, Calendar } from 'lucide-react';
+import { Home, User, Plus } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { LanguageContext } from '../App';
 
@@ -14,10 +14,6 @@ const TabBar = () => {
         <Home size={28} />
       </Link>
       
-      <Link to="/calendar" className={`p-2 ${path === '/calendar' ? 'text-indigo-500' : 'text-gray-400'}`}>
-        <Calendar size={28} />
-      </Link>
-      
       <div className="relative">
         <div className="absolute -top-8 -translate-x-1/2 left-1/2">
           <Link 
@@ -29,10 +25,6 @@ const TabBar = () => {
           </Link>
         </div>
       </div>
-      
-      <Link to="/schedule-list" className={`p-2 ${path === '/schedule-list' ? 'text-indigo-500' : 'text-gray-400'}`}>
-        <List size={28} />
-      </Link>
       
       <Link to="/profile" className={`p-2 ${path === '/profile' ? 'text-indigo-500' : 'text-gray-400'}`}>
         <User size={28} />

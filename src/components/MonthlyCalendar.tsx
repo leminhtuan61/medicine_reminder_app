@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, X, Check, Droplet } from 'lucide-react';
 import { LanguageContext } from '../App';
 import { Medicine } from './MedicineList';
 import { Pill, Capsule, TabletBottle, Tablets } from './MedicineIcons';
+import { useNavigate } from 'react-router-dom';
 
 interface CalendarDay {
   date: Date;
@@ -13,6 +14,8 @@ interface CalendarDay {
   injectionCount: number;
   medicineCompleted: boolean;
   injectionCompleted: boolean;
+  uncompletedMedicineCount: number;
+  uncompletedInjectionCount: number;
   waterIntake: number;
   waterPercentage: number;
   waterCompleted: boolean;
@@ -22,6 +25,111 @@ interface DayDetailProps {
   date: Date;
   onClose: () => void;
 }
+
+// Function to check if medicine should be shown on selected date
+const shouldShowMedicine = (medicine: Medicine, dateStr: string): boolean => {
+  if (!medicine.startDate) {
+    // Nếu không có ngày bắt đầu, hiển thị thuốc cho mọi ngày
+    return true;
+  }
+
+  const startDate = new Date(medicine.startDate);
+  const selectedDateTime = new Date(dateStr);
+  
+  // Chuyển về đầu ngày để so sánh chính xác
+  startDate.setHours(0, 0, 0, 0);
+  selectedDateTime.setHours(0, 0, 0, 0);
+
+  // Nếu ngày được chọn trước ngày bắt đầu, không hiển thị
+  if (selectedDateTime < startDate) {
+    return false;
+  }
+
+  // Kiểm tra dựa trên thời gian điều trị
+  if (medicine.duration) {
+    const durationMap: { [key: string]: number } = {
+      '1 Ngày': 1,
+      'One Day': 1,
+      '1 Week': 7,
+      '1 Tuần': 7,
+      '2 Weeks': 14,
+      '2 Tuần': 14,
+      '1 Month': 30,
+      '1 Tháng': 30,
+      '3 Months': 90,
+      '3 Tháng': 90,
+      '6 Months': 180,
+      '6 Tháng': 180,
+      '1 Year': 365,
+      '1 Năm': 365,
+      'Ongoing': Infinity,
+      'Liên tục': Infinity
+    };
+
+    const durationDays = durationMap[medicine.duration] || Infinity;
+    
+    if (durationDays !== Infinity) {
+      // Tính ngày kết thúc (bao gồm cả ngày bắt đầu và ngày cuối cùng)
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + durationDays - 1); // Trừ 1 vì đã tính cả ngày bắt đầu
+      
+      // Nếu ngày được chọn sau ngày kết thúc, không hiển thị
+      if (selectedDateTime > endDate) {
+        return false;
+      }
+    }
+  }
+  
+  // Kiểm tra tần suất (frequency)
+  if (medicine.frequency) {
+    // Nếu trùng ngày bắt đầu, luôn hiển thị
+    if (selectedDateTime.getTime() === startDate.getTime()) {
+      return true;
+    }
+    
+    // Tính khoảng cách ngày từ ngày bắt đầu đến ngày được chọn
+    const diffTime = Math.abs(selectedDateTime.getTime() - startDate.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    switch (medicine.frequency) {
+      case 'Daily':
+      case 'Hằng ngày':
+        // Hiển thị mỗi ngày
+        return true;
+        
+      case 'Every 2 days':
+      case 'Cách 2 ngày':
+        // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
+        return diffDays % 2 === 0;
+        
+      case 'Every 3 days':
+      case 'Cách 3 ngày':
+        // Hiển thị ngày đầu tiên và mỗi 3 ngày sau đó
+        return diffDays % 3 === 0;
+        
+      case 'Weekly':
+      case 'Hàng tuần':
+        // Hiển thị ngày đầu tiên và mỗi 7 ngày sau đó
+        return diffDays % 7 === 0;
+        
+      case 'Biweekly':
+      case 'Hai tuần một lần':
+        // Hiển thị ngày đầu tiên và mỗi 14 ngày sau đó
+        return diffDays % 14 === 0;
+        
+      case 'Monthly':
+      case 'Hàng tháng':
+        // Kiểm tra nếu là cùng ngày trong tháng
+        return selectedDateTime.getDate() === startDate.getDate();
+        
+      default:
+        // Nếu không có hoặc không nhận dạng được tần suất, hiển thị mỗi ngày
+        return true;
+    }
+  }
+
+  return true;
+};
 
 // Component to display day details in popup
 const DayDetail: React.FC<DayDetailProps> = ({ date, onClose }) => {
@@ -48,12 +156,14 @@ const DayDetail: React.FC<DayDetailProps> = ({ date, onClose }) => {
   
   // Filter medicines for this date
   const medicinesForDate = medicines.filter(med => 
-    med.type === 'medicine' || med.type === 'tablet' || med.type === 'other'
+    (med.type === 'medicine' || med.type === 'tablet' || med.type === 'other') &&
+    shouldShowMedicine(med, dateStr)
   );
   
   // Filter injections for this date
   const injectionsForDate = medicines.filter(med => 
-    med.type === 'injection'
+    med.type === 'injection' &&
+    shouldShowMedicine(med, dateStr)
   );
   
   // Get icon component based on medicine type
@@ -88,7 +198,7 @@ const DayDetail: React.FC<DayDetailProps> = ({ date, onClose }) => {
   
   // Check if a medicine has been taken
   const isMedicineTaken = (medicine: Medicine, scheduleIndex: number) => {
-    if (!medicine.takenRecords[dateStr]) return false;
+    if (!medicine.takenRecords || !medicine.takenRecords[dateStr]) return false;
     
     if (typeof medicine.takenRecords[dateStr] === 'boolean') {
       return scheduleIndex === 0 ? medicine.takenRecords[dateStr] : false;
@@ -241,6 +351,7 @@ const MonthlyCalendar: React.FC = () => {
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [waterIntake, setWaterIntake] = useState<Record<string, number>>({});
   const [showDayDetail, setShowDayDetail] = useState(false);
+  const navigate = useNavigate();
   
   // Day names in Vietnamese and English
   const dayNames = {
@@ -318,37 +429,59 @@ const MonthlyCalendar: React.FC = () => {
         
         // Count medicines and check completion
         const medicinesForDay = medicines.filter(med => 
-          med.type === 'medicine' || med.type === 'tablet' || med.type === 'other'
+          (med.type === 'medicine' || med.type === 'tablet' || med.type === 'other') &&
+          shouldShowMedicine(med, dateStr)
         );
         
         const injectionsForDay = medicines.filter(med => 
-          med.type === 'injection'
+          med.type === 'injection' &&
+          shouldShowMedicine(med, dateStr)
         );
         
-        const medicineCount = medicinesForDay.length;
-        const injectionCount = injectionsForDay.length;
+        // Calculate total schedules count instead of just medicine count
+        let medicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          medicineCount += medicine.schedules.length;
+        });
+        
+        let injectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          injectionCount += injection.schedules.length;
+        });
+        
+        // Count completed medicine schedules
+        let completedMedicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          if (medicine.takenRecords && medicine.takenRecords[dateStr]) {
+            if (Array.isArray(medicine.takenRecords[dateStr])) {
+              completedMedicineCount += medicine.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (medicine.takenRecords[dateStr] === true) {
+              completedMedicineCount += 1;
+            }
+          }
+        });
+        
+        // Count completed injection schedules
+        let completedInjectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          if (injection.takenRecords && injection.takenRecords[dateStr]) {
+            if (Array.isArray(injection.takenRecords[dateStr])) {
+              completedInjectionCount += injection.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (injection.takenRecords[dateStr] === true) {
+              completedInjectionCount += 1;
+            }
+          }
+        });
         
         // Check if all medicines are completed
-        const allMedicinesCompleted = medicineCount > 0 && medicinesForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allMedicinesCompleted = medicineCount > 0 && completedMedicineCount === medicineCount;
         
         // Check if all injections are completed
-        const allInjectionsCompleted = injectionCount > 0 && injectionsForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allInjectionsCompleted = injectionCount > 0 && completedInjectionCount === injectionCount;
+        
+        // Calculate uncompleted counts for display
+        const uncompletedMedicineCount = medicineCount - completedMedicineCount;
+        const uncompletedInjectionCount = injectionCount - completedInjectionCount;
         
         // Get water intake data
         const intake = waterIntake[dateStr] || 0;
@@ -363,6 +496,8 @@ const MonthlyCalendar: React.FC = () => {
           injectionCount,
           medicineCompleted: allMedicinesCompleted,
           injectionCompleted: allInjectionsCompleted,
+          uncompletedMedicineCount,
+          uncompletedInjectionCount,
           waterIntake: intake,
           waterPercentage: percentage,
           waterCompleted: percentage >= 100
@@ -376,37 +511,59 @@ const MonthlyCalendar: React.FC = () => {
         
         // Count medicines and check completion
         const medicinesForDay = medicines.filter(med => 
-          med.type === 'medicine' || med.type === 'tablet' || med.type === 'other'
+          (med.type === 'medicine' || med.type === 'tablet' || med.type === 'other') &&
+          shouldShowMedicine(med, dateStr)
         );
         
         const injectionsForDay = medicines.filter(med => 
-          med.type === 'injection'
+          med.type === 'injection' &&
+          shouldShowMedicine(med, dateStr)
         );
         
-        const medicineCount = medicinesForDay.length;
-        const injectionCount = injectionsForDay.length;
+        // Calculate total schedules count instead of just medicine count
+        let medicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          medicineCount += medicine.schedules.length;
+        });
+        
+        let injectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          injectionCount += injection.schedules.length;
+        });
+        
+        // Count completed medicine schedules
+        let completedMedicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          if (medicine.takenRecords && medicine.takenRecords[dateStr]) {
+            if (Array.isArray(medicine.takenRecords[dateStr])) {
+              completedMedicineCount += medicine.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (medicine.takenRecords[dateStr] === true) {
+              completedMedicineCount += 1;
+            }
+          }
+        });
+        
+        // Count completed injection schedules
+        let completedInjectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          if (injection.takenRecords && injection.takenRecords[dateStr]) {
+            if (Array.isArray(injection.takenRecords[dateStr])) {
+              completedInjectionCount += injection.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (injection.takenRecords[dateStr] === true) {
+              completedInjectionCount += 1;
+            }
+          }
+        });
         
         // Check if all medicines are completed
-        const allMedicinesCompleted = medicineCount > 0 && medicinesForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allMedicinesCompleted = medicineCount > 0 && completedMedicineCount === medicineCount;
         
         // Check if all injections are completed
-        const allInjectionsCompleted = injectionCount > 0 && injectionsForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allInjectionsCompleted = injectionCount > 0 && completedInjectionCount === injectionCount;
+        
+        // Calculate uncompleted counts for display
+        const uncompletedMedicineCount = medicineCount - completedMedicineCount;
+        const uncompletedInjectionCount = injectionCount - completedInjectionCount;
         
         // Get water intake data
         const intake = waterIntake[dateStr] || 0;
@@ -421,6 +578,8 @@ const MonthlyCalendar: React.FC = () => {
           injectionCount,
           medicineCompleted: allMedicinesCompleted,
           injectionCompleted: allInjectionsCompleted,
+          uncompletedMedicineCount,
+          uncompletedInjectionCount,
           waterIntake: intake,
           waterPercentage: percentage,
           waterCompleted: percentage >= 100
@@ -435,37 +594,59 @@ const MonthlyCalendar: React.FC = () => {
         
         // Count medicines and check completion
         const medicinesForDay = medicines.filter(med => 
-          med.type === 'medicine' || med.type === 'tablet' || med.type === 'other'
+          (med.type === 'medicine' || med.type === 'tablet' || med.type === 'other') &&
+          shouldShowMedicine(med, dateStr)
         );
         
         const injectionsForDay = medicines.filter(med => 
-          med.type === 'injection'
+          med.type === 'injection' &&
+          shouldShowMedicine(med, dateStr)
         );
         
-        const medicineCount = medicinesForDay.length;
-        const injectionCount = injectionsForDay.length;
+        // Calculate total schedules count instead of just medicine count
+        let medicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          medicineCount += medicine.schedules.length;
+        });
+        
+        let injectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          injectionCount += injection.schedules.length;
+        });
+        
+        // Count completed medicine schedules
+        let completedMedicineCount = 0;
+        medicinesForDay.forEach(medicine => {
+          if (medicine.takenRecords && medicine.takenRecords[dateStr]) {
+            if (Array.isArray(medicine.takenRecords[dateStr])) {
+              completedMedicineCount += medicine.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (medicine.takenRecords[dateStr] === true) {
+              completedMedicineCount += 1;
+            }
+          }
+        });
+        
+        // Count completed injection schedules
+        let completedInjectionCount = 0;
+        injectionsForDay.forEach(injection => {
+          if (injection.takenRecords && injection.takenRecords[dateStr]) {
+            if (Array.isArray(injection.takenRecords[dateStr])) {
+              completedInjectionCount += injection.takenRecords[dateStr].filter(taken => taken === true).length;
+            } else if (injection.takenRecords[dateStr] === true) {
+              completedInjectionCount += 1;
+            }
+          }
+        });
         
         // Check if all medicines are completed
-        const allMedicinesCompleted = medicineCount > 0 && medicinesForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allMedicinesCompleted = medicineCount > 0 && completedMedicineCount === medicineCount;
         
         // Check if all injections are completed
-        const allInjectionsCompleted = injectionCount > 0 && injectionsForDay.every(med => {
-          if (!med.takenRecords[dateStr]) return false;
-          
-          if (typeof med.takenRecords[dateStr] === 'boolean') {
-            return med.takenRecords[dateStr];
-          }
-          
-          return med.takenRecords[dateStr].every(taken => taken);
-        });
+        const allInjectionsCompleted = injectionCount > 0 && completedInjectionCount === injectionCount;
+        
+        // Calculate uncompleted counts for display
+        const uncompletedMedicineCount = medicineCount - completedMedicineCount;
+        const uncompletedInjectionCount = injectionCount - completedInjectionCount;
         
         // Get water intake data
         const intake = waterIntake[dateStr] || 0;
@@ -480,6 +661,8 @@ const MonthlyCalendar: React.FC = () => {
           injectionCount,
           medicineCompleted: allMedicinesCompleted,
           injectionCompleted: allInjectionsCompleted,
+          uncompletedMedicineCount,
+          uncompletedInjectionCount,
           waterIntake: intake,
           waterPercentage: percentage,
           waterCompleted: percentage >= 100
@@ -509,13 +692,20 @@ const MonthlyCalendar: React.FC = () => {
   // Handle date selection
   const handleDateSelect = (day: CalendarDay) => {
     setSelectedDate(day.date);
-    setShowDayDetail(true);
     
     // Dispatch an event to notify other components about date change
     const dateStr = day.date.toISOString().split('T')[0];
-    window.dispatchEvent(new CustomEvent('dateSelected', { 
-      detail: { date: dateStr } 
-    }));
+    
+    // Điều hướng về trang chủ để hiển thị chi tiết sử dụng React Router
+    navigate('/');
+    
+    // Đợi một chút để trang chủ được tải, sau đó mới phát sự kiện chọn ngày
+    // Sử dụng setTimeout để đảm bảo sự kiện được phát sau khi chuyển trang
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('dateSelected', { 
+        detail: { date: dateStr } 
+      }));
+    }, 100);
   };
   
   // Close day detail popup
@@ -526,9 +716,13 @@ const MonthlyCalendar: React.FC = () => {
   return (
     <div className="p-6 pb-28">
       <div className="flex justify-between items-center mb-6">
+        <button onClick={() => navigate('/')} className="p-2 rounded-full hover:bg-gray-100">
+          <ChevronLeft size={24} />
+        </button>
         <h1 className="text-2xl font-bold">
           {language === 'vi' ? 'Lịch' : 'Calendar'}
         </h1>
+        <div className="w-10"></div> {/* Spacer for alignment */}
       </div>
       
       {/* Month and Year Display with Navigation */}
@@ -590,16 +784,20 @@ const MonthlyCalendar: React.FC = () => {
             <div className="absolute bottom-0 right-0 flex space-x-0.5 p-0.5">
               {/* Medicine indicator */}
               {day.medicineCount > 0 && (
-                <div className={`w-2 h-2 rounded-full ${
-                  day.medicineCompleted ? 'bg-green-500' : 'bg-pink-500'
-                }`}></div>
+                <div className="relative">
+                  <div className={`w-2 h-2 rounded-full ${
+                    day.medicineCompleted ? 'bg-green-500' : 'bg-pink-500'
+                  }`}></div>
+                </div>
               )}
               
               {/* Injection indicator */}
               {day.injectionCount > 0 && (
-                <div className={`w-2 h-2 rounded-full ${
-                  day.injectionCompleted ? 'bg-green-500' : 'bg-purple-600'
-                }`}></div>
+                <div className="relative">
+                  <div className={`w-2 h-2 rounded-full ${
+                    day.injectionCompleted ? 'bg-green-500' : 'bg-purple-600'
+                  }`}></div>
+                </div>
               )}
               
               {/* Water intake indicator */}

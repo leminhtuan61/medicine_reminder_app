@@ -10,7 +10,6 @@ import EditSchedule from './components/EditSchedule';
 import Profile from './components/Profile';
 import EditProfile from './components/EditProfile';
 import ScheduleList from './components/ScheduleList';
-import MonthlyCalendar from './components/MonthlyCalendar';
 import Onboarding from './components/Onboarding';
 
 // Create language context
@@ -25,6 +24,18 @@ function MainScreen() {
   const [showLanguageOptions, setShowLanguageOptions] = useState(false);
   const languageMenuRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentWaterIntake, setCurrentWaterIntake] = useState(0);
+  
+  // Load current water intake when selectedDate changes
+  useEffect(() => {
+    try {
+      const storedWaterIntake = localStorage.getItem('waterIntake') || '{}';
+      const waterIntake = JSON.parse(storedWaterIntake);
+      setCurrentWaterIntake(waterIntake[selectedDate] || 0);
+    } catch (e) {
+      setCurrentWaterIntake(0);
+    }
+  }, [selectedDate]);
   
   // Close language menu when clicking outside
   useEffect(() => {
@@ -44,16 +55,31 @@ function MainScreen() {
   useEffect(() => {
     const handleDateSelect = (event: CustomEvent) => {
       if (event.detail && event.detail.date) {
-        setSelectedDate(event.detail.date);
+        const dateStr = event.detail.date;
+        
+        // Cập nhật ngày đã chọn vào state và localStorage
+        setSelectedDate(dateStr);
+        localStorage.setItem('selectedDate', dateStr);
+        
+        // Cải tiến: Gửi sự kiện forceRefresh để buộc các component cập nhật
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('forceRefresh'));
+        }, 10);
       }
     };
     
     window.addEventListener('dateSelected' as any, handleDateSelect);
     
+    // Khôi phục ngày đã chọn từ localStorage khi load trang
+    const savedDate = localStorage.getItem('selectedDate');
+    if (savedDate) {
+      setSelectedDate(savedDate);
+    }
+    
     return () => {
       window.removeEventListener('dateSelected' as any, handleDateSelect);
     };
-  }, []);
+  }, []); // Không phụ thuộc vào selectedDate để tránh vòng lặp
   
   // Handle tab change
   const handleTabChange = (tab: string) => {
@@ -76,9 +102,12 @@ function MainScreen() {
     const storedWaterIntake = localStorage.getItem('waterIntake') || '{}';
     const waterIntake = JSON.parse(storedWaterIntake);
     
-    // Add 250ml to today's intake
-    const today = new Date().toISOString().split('T')[0];
-    waterIntake[today] = (waterIntake[today] || 0) + 250;
+    // Add 250ml to selected date's intake
+    const newIntake = (waterIntake[selectedDate] || 0) + 250;
+    waterIntake[selectedDate] = newIntake;
+    
+    // Update state for immediate UI refresh
+    setCurrentWaterIntake(newIntake);
     
     // Save updated water intake
     localStorage.setItem('waterIntake', JSON.stringify(waterIntake));
@@ -94,10 +123,7 @@ function MainScreen() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">
-              {language === 'vi' ? 'Nhắc Nhở' : 'Medicine'}
-            </h1>
-            <h1 className="text-3xl font-bold">
-              {language === 'vi' ? 'Uống Thuốc' : 'Reminder'}
+              {language === 'vi' ? 'Nhắc Nhở' : 'Reminder'}
             </h1>
           </div>
           <div className="relative" ref={languageMenuRef}>
@@ -197,15 +223,7 @@ function MainScreen() {
               <div className="flex items-center justify-center">
                 <Droplet size={24} className="text-blue-500 mr-2" />
                 <span className="text-2xl font-bold text-blue-700">
-                  {(() => {
-                    try {
-                      const waterIntake = JSON.parse(localStorage.getItem('waterIntake') || '{}');
-                      const intake = waterIntake[selectedDate] || 0;
-                      return intake >= 1000 ? `${(intake / 1000).toFixed(1)}L` : `${intake}ml`;
-                    } catch (e) {
-                      return '0ml';
-                    }
-                  })()}
+                  {currentWaterIntake >= 1000 ? `${(currentWaterIntake / 1000).toFixed(1)}L` : `${currentWaterIntake}ml`}
                 </span>
                 <span className="text-blue-500 ml-2">/2L</span>
               </div>
@@ -214,17 +232,7 @@ function MainScreen() {
               <div className="w-full bg-blue-200 rounded-full h-2.5 mt-2">
                 <div 
                   className="bg-blue-600 h-2.5 rounded-full" 
-                  style={{ 
-                    width: (() => {
-                      try {
-                        const waterIntake = JSON.parse(localStorage.getItem('waterIntake') || '{}');
-                        const intake = waterIntake[selectedDate] || 0;
-                        return `${Math.min(100, (intake / 2000) * 100)}%`;
-                      } catch (e) {
-                        return '0%';
-                      }
-                    })()
-                  }}
+                  style={{ width: `${Math.min(100, (currentWaterIntake / 2000) * 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -305,7 +313,6 @@ function App() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/edit-profile" element={<EditProfile />} />
                 <Route path="/schedule-list" element={<ScheduleList />} />
-                <Route path="/calendar" element={<MonthlyCalendar />} />
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
