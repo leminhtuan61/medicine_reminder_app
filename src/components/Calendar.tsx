@@ -102,13 +102,18 @@ const shouldShowMedicine = (medicine: Medicine, dateStr: string): boolean => {
         
       case 'Every 2 days':
       case 'Cách 1 ngày':
-        // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
+        // Hiển thị ngày đầu tiên và cứ 2 ngày uống 1 lần (mỗi lần cách nhau 1 ngày)
         return diffDays % 2 === 0;
         
       case 'Every 3 days':
-      case 'Cách 3 ngày':
-        // Hiển thị ngày đầu tiên và mỗi 3 ngày sau đó
+      case 'Cách 2 ngày':
+        // Hiển thị ngày đầu tiên và cứ 3 ngày uống 1 lần (mỗi lần cách nhau 2 ngày)
         return diffDays % 3 === 0;
+        
+      case 'Every 4 days': 
+      case 'Cách 3 ngày':
+        // Hiển thị ngày đầu tiên và cứ 4 ngày uống 1 lần (mỗi lần cách nhau 3 ngày)
+        return diffDays % 4 === 0;
         
       case 'Weekly':
       case 'Hàng tuần':

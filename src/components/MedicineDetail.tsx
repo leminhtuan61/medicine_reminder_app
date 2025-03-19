@@ -208,18 +208,23 @@ const MedicineDetail = () => {
       switch (medicine.frequency) {
         case 'Daily':
         case 'Hằng ngày':
-          // Hiển thị mỗi ngày
+          // Hiển thị mỗi ngày, không cần thông báo
           return true;
           
         case 'Every 2 days':
         case 'Cách 1 ngày':
-          // Hiển thị ngày đầu tiên và mỗi 2 ngày sau đó
+          // Hiển thị ngày đầu tiên và cứ 2 ngày uống 1 lần (mỗi lần cách nhau 1 ngày)
           return diffDays % 2 === 0;
           
         case 'Every 3 days':
-        case 'Cách 3 ngày':
-          // Hiển thị ngày đầu tiên và mỗi 3 ngày sau đó
+        case 'Cách 2 ngày':
+          // Hiển thị ngày đầu tiên và cứ 3 ngày uống 1 lần (mỗi lần cách nhau 2 ngày) 
           return diffDays % 3 === 0;
+          
+        case 'Every 4 days':
+        case 'Cách 3 ngày':
+          // Hiển thị ngày đầu tiên và cứ 4 ngày uống 1 lần (mỗi lần cách nhau 3 ngày)
+          return diffDays % 4 === 0;
           
         case 'Weekly':
         case 'Hàng tuần':
@@ -340,16 +345,27 @@ const MedicineDetail = () => {
         case 'Every 2 days':
         case 'Cách 1 ngày':
           if (diffDays % 2 !== 0) {
+            const nextDoseIn = 2 - (diffDays % 2);
             return language === 'vi'
-              ? 'Không cần uống thuốc này hôm nay. Lần uống kế tiếp là ngày mai.'
-              : 'No dose today. Next dose is tomorrow.';
+              ? `Không cần uống thuốc này hôm nay. Lần uống kế tiếp là sau ${nextDoseIn} ngày.`
+              : `No dose today. Next dose is in ${nextDoseIn} days.`;
           }
           return '';
           
         case 'Every 3 days':
-        case 'Cách 3 ngày':
+        case 'Cách 2 ngày':
           if (diffDays % 3 !== 0) {
             const nextDoseIn = 3 - (diffDays % 3);
+            return language === 'vi'
+              ? `Không cần uống thuốc này hôm nay. Lần uống kế tiếp là sau ${nextDoseIn} ngày.`
+              : `No dose today. Next dose is in ${nextDoseIn} days.`;
+          }
+          return '';
+          
+        case 'Every 4 days':
+        case 'Cách 3 ngày':
+          if (diffDays % 4 !== 0) {
+            const nextDoseIn = 4 - (diffDays % 4);
             return language === 'vi'
               ? `Không cần uống thuốc này hôm nay. Lần uống kế tiếp là sau ${nextDoseIn} ngày.`
               : `No dose today. Next dose is in ${nextDoseIn} days.`;
@@ -422,13 +438,18 @@ const MedicineDetail = () => {
     
     switch (frequency) {
       case 'Every 2 days':
-      case 'Cách 2 ngày':
+      case 'Cách 1 ngày':
         nextDoseDate.setDate(currentDate.getDate() + (diffDays % 2 === 0 ? 2 : 1));
         break;
         
       case 'Every 3 days':
-      case 'Cách 3 ngày':
+      case 'Cách 2 ngày':
         nextDoseDate.setDate(currentDate.getDate() + (3 - (diffDays % 3)));
+        break;
+        
+      case 'Every 4 days':
+      case 'Cách 3 ngày':
+        nextDoseDate.setDate(currentDate.getDate() + (4 - (diffDays % 4)));
         break;
         
       case 'Weekly':
